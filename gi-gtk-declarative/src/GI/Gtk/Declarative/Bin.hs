@@ -78,8 +78,6 @@ instance (Gtk.IsBin parent) => Patchable (Bin parent) where
     sc <- Gtk.widgetGetStyleContext widget'
     updateClasses sc mempty (collectedClasses collected)
 
-    mapM_ (applyAfterCreated widget') attrs
-
     childState <- create child
     childWidget <- someStateWidget childState
     maybe (pure ()) Gtk.widgetDestroy =<< Gtk.binGetChild widget'
