@@ -37,6 +37,7 @@ library
                       , GI.Gtk.Declarative.Attributes.Internal.Conversions
                       , GI.Gtk.Declarative.Bin
                       , GI.Gtk.Declarative.CustomWidget
+                      , GI.Gtk.Declarative.CustomWidget.ComboBoxText
                       , GI.Gtk.Declarative.Container
                       , GI.Gtk.Declarative.Container.Box
                       , GI.Gtk.Declarative.Container.Class
@@ -50,6 +51,7 @@ library
                       , GI.Gtk.Declarative.State
                       , GI.Gtk.Declarative.Widget
                       , GI.Gtk.Declarative.Widget.Conversions
+                      , GI.Gtk.Declarative.Unsafe
   build-depends:        base >=4.10 && <5
                       , gi-gobject             >= 2    && <3
                       , gi-glib                >= 2    && <3
