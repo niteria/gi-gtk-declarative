@@ -30,6 +30,7 @@ executable example
                       , ManyBoxes
                       , MenuBar
                       , Paned
+                      , Todo
   build-depends:        base >=4.10 && <5
                       , async
                       , bytestring
