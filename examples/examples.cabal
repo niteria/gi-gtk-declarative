@@ -21,6 +21,7 @@ executable example
                       , CSS
                       , CustomWidget
                       , ComboBoxText
+                      , LaggyUIDemo
                       , Dialog
                       , Exit
                       , FileChooserButton
@@ -37,6 +38,7 @@ executable example
                       , gi-gobject
                       , gi-glib
                       , gi-gtk
+                      , gi-gtk-hs
                       , gi-gtk-declarative
                       , gi-gtk-declarative-app-simple
                       , gi-gdk

@@ -13,6 +13,7 @@ module GI.Gtk.Declarative.Attributes.Collected
   , collectAttributes
   , constructProperties
   , updateProperties
+  , updatePropertiesSingleWidget
   , updateClasses
   )
 where
@@ -30,6 +31,9 @@ import           GHC.TypeLits
 import           Data.Vector                              ( Vector )
 
 import           GI.Gtk.Declarative.Attributes
+import Control.Concurrent (threadDelay)
+import Control.Monad (when)
+import Debug.Trace (trace)
 
 -- | A collected property key/value pair, to be used when
 -- settings properties when patching widgets.
@@ -105,7 +109,8 @@ updateProperties (widget' :: widget) oldProps newProps = do
       setOps = mconcat
         (HashMap.elems (HashMap.intersectionWith toMaybeSetOp oldProps newProps)
         )
-  GI.set widget' (map (toSetOp (Proxy @widget)) toAdd <> setOps)
+  let props = (map (toSetOp (Proxy @widget)) toAdd <> setOps)
+  GI.set widget' props
  where
   toSetOp
     :: Proxy widget
@@ -122,11 +127,64 @@ updateProperties (widget' :: widget) oldProps newProps = do
       Just Refl | v1 /= v2 -> pure (attr Gtk.:= v2)
       _                    -> mempty
 
+updatePropertiesSingleWidget
+  :: Typeable widget => widget -> CollectedProperties widget -> CollectedProperties widget -> IO ()
+updatePropertiesSingleWidget (widget' :: widget) oldProps newProps = do
+  let toAdd  = HashMap.elems (HashMap.difference newProps oldProps)
+      toAddKeys  = HashMap.keys (HashMap.difference newProps oldProps)
+      setOps = mconcat
+        (HashMap.elems setOpsHM
+        )
+      setOpsHM = (HashMap.intersectionWith toMaybeSetOp oldProps newProps)
+      setOpsKeys = mconcat
+        (HashMap.keys setOpsHM
+        )
+  putStrLn ("updateProperties toAdd: " ++ show toAddKeys ++ " setOps: " ++ show setOpsKeys)
+  -- threadDelay 1000000
+  let props = (map (toSetOp (Proxy @widget)) toAdd <> setOps)
+  mapM_ getOp setOps
+  -- when (not $ null props) $ do
+  GI.set widget' props
+  -- putStrLn ("after updateProperties toAdd: " ++ show toAddKeys ++ " setOps: " ++ show setOpsKeys)
+  -- threadDelay 1000000
+ where
+  getOp :: Gtk.AttrOp widget 'GI.AttrSet -> IO ()
+  getOp (k Gtk.:= (v :: t)) =
+    case eqT @widget @Gtk.Entry of
+      Just Refl -> do
+        putStrLn "Found entry"
+        t <- Gtk.entryGetText widget'
+        putStrLn ("getOp " ++ show t)
+
+      _ -> putStrLn "Got something else"
+  getOp _ = return ()
+  toSetOp
+    :: Proxy widget
+    -> CollectedProperty widget
+    -> Gtk.AttrOp widget 'GI.AttrSet
+  toSetOp _ (CollectedProperty attr value) = attr Gtk.:= value
+
+  toMaybeSetOp
+    :: CollectedProperty widget
+    -> CollectedProperty widget
+    -> [Gtk.AttrOp widget 'GI.AttrSet]
+  toMaybeSetOp (CollectedProperty attr (v1 :: t1)) (CollectedProperty _ (v2 :: t2))
+    = case eqT @t1 @t2 of
+      Just Refl | v1 /= v2 ->
+        case eqT @t1 @Text of
+          Just Refl -> trace ("toMaybeSetOp: " ++ show (v1, v2)) $ pure (attr Gtk.:= v2)
+          _ -> pure (attr Gtk.:= v2)
+      _                    -> mempty
+
 -- | Update the style context's classes to only include the new set of
 -- classes (last argument).
 updateClasses :: Gtk.StyleContext -> ClassSet -> ClassSet -> IO ()
 updateClasses sc old new = do
   let toAdd    = HashSet.difference new old
       toRemove = HashSet.difference old new
+  -- putStrLn ("updateClasses toAdd: " ++ show toAdd ++ " toRemove: " ++ show toRemove)
+  -- threadDelay 1000000
   mapM_ (Gtk.styleContextAddClass sc)    toAdd
   mapM_ (Gtk.styleContextRemoveClass sc) toRemove
+  -- putStrLn ("after updateClasses toAdd: " ++ show toAdd ++ " toRemove: " ++ show toRemove)
+  -- threadDelay 1000000

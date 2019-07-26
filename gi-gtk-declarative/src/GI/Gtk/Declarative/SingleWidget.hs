@@ -28,6 +28,7 @@ import           GI.Gtk.Declarative.EventSource
 import           GI.Gtk.Declarative.Patch
 import           GI.Gtk.Declarative.State
 import           GI.Gtk.Declarative.Widget
+import Control.Concurrent (threadDelay)
 
 -- | Declarative version of a /leaf/ widget, i.e. a widget without any children.
 data SingleWidget widget event where
@@ -43,6 +44,7 @@ instance Functor (SingleWidget widget) where
 instance Patchable (SingleWidget widget) where
   create = \case
     SingleWidget ctor attrs -> do
+        putStrLn "Patchable SingleWidget create"
         let collected = collectAttributes attrs
         widget' <- Gtk.new ctor (constructProperties collected)
         Gtk.widgetShow widget'
@@ -56,14 +58,20 @@ instance Patchable (SingleWidget widget) where
         (SingleWidget (ctor :: Gtk.ManagedPtr w2 -> w2) newAttributes) =
     case (st, eqT @w @w1, eqT @w1 @w2) of
       (StateTreeWidget top, Just Refl, Just Refl) -> Modify $ do
+        putStrLn "Patchable SingleWidget Modify"
+        -- threadDelay 1000000
         let w = stateTreeWidget top
         let oldCollected = stateTreeCollectedAttributes top
             newCollected = collectAttributes newAttributes
-        updateProperties w (collectedProperties oldCollected) (collectedProperties newCollected)
-        updateClasses (stateTreeStyleContext top) (collectedClasses oldCollected) (collectedClasses newCollected)
+        updatePropertiesSingleWidget w (collectedProperties oldCollected) (collectedProperties newCollected)
+        -- updateClasses (stateTreeStyleContext top) (collectedClasses oldCollected) (collectedClasses newCollected)
         let top' = top { stateTreeCollectedAttributes = newCollected }
+        putStrLn "After Patchable SingleWidget Modify"
+        -- threadDelay 1000000
         return (SomeState (StateTreeWidget top' { stateTreeCollectedAttributes = newCollected }))
-      _ -> Replace (create (SingleWidget ctor newAttributes))
+      _ -> Replace $ do
+        putStrLn "Patchable SingleWidget Replace"
+        (create (SingleWidget ctor newAttributes))
 
 instance EventSource (SingleWidget widget) where
   subscribe (SingleWidget (_ :: Gtk.ManagedPtr w1 -> w1) props) (SomeState (st :: StateTree stateType w2 child event cs)) cb =

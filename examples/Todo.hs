@@ -12,6 +12,7 @@ import qualified Data.Vector.Mutable           as MVector
 import qualified GI.Gtk                        as Gtk
 import           GI.Gtk.Declarative
 import qualified GI.Gtk.Declarative.App.Simple as GtkS
+import Control.Concurrent
 
 data Todo = Todo
   { name :: Text
@@ -32,18 +33,18 @@ data Event
 view' :: State -> GtkS.AppView Gtk.Window Event
 view' s = bin
   Gtk.Window
-  [ #title := "Todo App"
-  , on #deleteEvent (const (True, Closed))
+  [
+   on #deleteEvent (const (True, Closed))
   ]
   (container Gtk.Box
-             [#orientation := Gtk.OrientationVertical]
-             [todoList, newTodoForm]
+             []
+             [newTodoForm]
   )
   where
     todoList =
       BoxChild defaultBoxChildProperties { expand = True, fill = True }
         $ container Gtk.Box
-                    [#orientation := Gtk.OrientationVertical]
+                    []
                     (Vector.imap todoItem (todos s))
     todoItem i todo = bin Gtk.CheckButton [#active := completed todo, on #toggled (TodoToggled i)]
       $ widget Gtk.Label
@@ -58,9 +59,11 @@ view' s = bin
     newTodoForm = widget
       Gtk.Entry
       [ #text := currentText s
-      , #placeholderText := "What needs to be done?"
-      , onM #changed (fmap TodoTextChanged . Gtk.entryGetText)
-      , on #activate TodoSubmitted
+      -- , #placeholderText := "What needs to be done?"
+      , onM #changed $ \w -> do
+        threadDelay 100000
+        (fmap TodoTextChanged . Gtk.entryGetText $ w)
+      -- , on #activate TodoSubmitted
       ]
 
 
@@ -82,4 +85,4 @@ mapAt :: Int -> (a -> a) -> Vector a -> Vector a
 mapAt i f = Vector.modify (\v -> MVector.write v i . f =<< MVector.read v i)
 
 main :: IO ()
-main = void $ GtkS.run GtkS.App {GtkS.view = view', GtkS.update = update', GtkS.inputs = [], GtkS.initialState = State {todos = mempty, currentText = mempty}}
+main = void $ GtkS.run GtkS.App {GtkS.view = view', GtkS.update = update', GtkS.inputs = [], GtkS.initialState = State {todos = mempty, currentText = "Buy milk"}}

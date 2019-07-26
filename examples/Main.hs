@@ -18,6 +18,7 @@ import qualified ManyBoxes
 import qualified MenuBar
 import qualified Paned
 import qualified Todo
+import qualified LaggyUIDemo
 
 main :: IO ()
 main =
@@ -35,6 +36,7 @@ main =
                  , ("Paned", Paned.main)
                  , ("Dialog", Dialog.main)
                  , ("Todo", Todo.main)
+                 , ("LaggyUIDemo", LaggyUIDemo.main)
                  ]
   in getArgs >>= \case
     [example] ->
